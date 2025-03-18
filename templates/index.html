@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Content Q&A Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f9;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            background: white;
+            margin: 50px auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        input, button {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input {
+            outline: none;
+        }
+
+        button {
+            background: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+            border: none;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        pre, p {
+            background: #eef;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: left;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .loading {
+            color: #ff5722;
+            font-style: italic;
+        }
+    </style>
+    <script>
+        async function ingestContent() {
+            const urls = document.getElementById("urls").value.split(",").map(url => url.trim()).filter(url => url);
+
+            if (urls.length === 0) {
+                alert("⚠️ Please enter at least one valid URL.");
+                return;
+            }
+
+            document.getElementById("content").innerHTML = "<span class='loading'>Fetching content...</span>";
+
+            try {
+                const response = await fetch("/ingest", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ urls })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById("content").innerHTML = "✅ Content successfully ingested!";
+                    document.getElementById("question").disabled = false; // Enable question input
+                } else {
+                    document.getElementById("content").innerHTML = `❌ Error: ${data.error || "Failed to fetch content"}`;
+                }
+            } catch (error) {
+                document.getElementById("content").innerHTML = "❌ Network error. Please try again.";
+            }
+        }
+
+        async function askQuestion() {
+            const question = document.getElementById("question").value.trim();
+
+            if (!question) {
+                alert("⚠️ Please enter a question.");
+                return;
+            }
+
+            document.getElementById("answer").innerHTML = "<span class='loading'>Fetching answer...</span>";
+
+            try {
+                const response = await fetch("/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question })
+                });
+
+                const data = await response.json();
+                document.getElementById("answer").innerHTML = data.answer || `❌ Error: ${data.error || "Failed to fetch answer"}`;
+            } catch (error) {
+                document.getElementById("answer").innerHTML = "❌ Network error. Please try again.";
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Web Content Q&A Tool</h1>
+
+        <label>Enter URLs (comma-separated):</label>
+        <input type="text" id="urls" placeholder="https://example.com, https://another.com">
+        <button onclick="ingestContent()">🚀 Fetch Content</button>
+
+        <h2>📌 Content Status:</h2>
+        <pre id="content"></pre>
+
+        <label>Ask a Question:</label>
+        <input type="text" id="question" placeholder="Enter your question" disabled>
+        <button onclick="askQuestion()">🔍 Get Answer</button>
+
+        <h2>📝 Answer:</h2>
+        <p id="answer"></p>
+    </div>
+</body>
+</html>
